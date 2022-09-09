@@ -67,15 +67,26 @@ server.on("upgrade", (req, socket, head) => {
         console.log(`payloadLength : ${payloadLength}`);
         // 今回のケースではペイロード長は7bitに収まっており、後続8byteのペイロード長はなく、次はマスク用keyとなる。
         // 固定で7bit + 8byteがペイロード長に使われるわけではないので注意。
-        const maskingKey = received.readUInt32BE(2);
+        // const maskingKey = received.readUInt32BE(2);
+        const maskingKey = received.readUInt32BE(3);
         const extentionData = null;
+        for (let i = 0; i < payloadLength; i++) {
+            console.log(i);
+            const maskingKey = received.readUInt8(2 + (i % 4));
+            const appData = received.readUInt8(6 + i);
+            const unmasked = appData ^ maskingKey;
+            const unmaskedBuffer = new Buffer(4);
+            unmaskedBuffer.writeInt8(unmasked, 0);
+            const data = unmaskedBuffer.toString();
+            console.log(data);
+        }
         // const applicationData = received.readUInt32BE(6);
-        const applicationData = parseInt(received.subarray(0, 11).toString());
+        const applicationData = received.readUInt32BE(7);
         const unmasked = applicationData ^ maskingKey;
         const unmaskedBuffer = new Buffer(60);
-        unmaskedBuffer.writeUInt32BE(unmasked, 0);
+        // unmaskedBuffer.writeUInt32BE(unmasked, 0);
         // unmaskedBuffer.writeUint32BE(unmasked, 0);
-        // unmaskedBuffer.writeUint32BE(unmasked,);
+        unmaskedBuffer.writeUint32BE(unmasked);
         const data = unmaskedBuffer.toString();
         console.log(data);
     });

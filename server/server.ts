@@ -76,6 +76,16 @@ server.on("upgrade", (req: any, socket: any, head: any) => {
       const maskingKey = received.readUInt32BE(3);
       
       const extentionData = null;
+      for (let i=0; i<payloadLength; i++) {
+        console.log(i);
+        const maskingKey = received.readUInt8(2 + (i % 4));
+        const appData = received.readUInt8(6 + i);
+        const unmasked = appData ^ maskingKey;
+        const unmaskedBuffer = new Buffer(4);
+        unmaskedBuffer.writeInt8(unmasked, 0);
+        const data = unmaskedBuffer.toString();
+        console.log(data);
+      }
       // const applicationData = received.readUInt32BE(6);
       const applicationData = received.readUInt32BE(7);
       const unmasked = applicationData ^ maskingKey;
