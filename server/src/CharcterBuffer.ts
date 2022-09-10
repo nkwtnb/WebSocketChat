@@ -2,6 +2,7 @@
 export const CharcterBuffer = class {
   #bytes: number;
   #buffer: number[];
+
   constructor(bytes: number) {
     this.#bytes = bytes;
     this.#buffer = [];
@@ -23,8 +24,8 @@ export const CharcterBuffer = class {
   }
 
   write(): string {
-    // UTF-8の場合、最大1文字4バイト使用する
-    const buffer = new Buffer(4);
+    // UTF-8の場合、最大1文字に4バイト使用する
+    const buffer = Buffer.alloc(4);
     for (let i=0; i<this.#buffer.length; i++) {
       buffer.writeUInt8(this.#buffer[i], i);
     }

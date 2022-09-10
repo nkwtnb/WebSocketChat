@@ -2,12 +2,9 @@
 //https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API/Writing_WebSocket_servers
 Object.defineProperty(exports, "__esModule", { value: true });
 const CharcterBuffer_1 = require("./CharcterBuffer");
+const Util_1 = require("./Util");
 const http = require("http");
 const crypt = require("crypto");
-const HOB_1 = 128;
-const HOB_2 = 64;
-const HOB_3 = 32;
-const HOB_4 = 16;
 const server = http.createServer((req, res) => {
     res.writeHead(200, { "Content-Type": "text/plain" });
     res.end("okay");
@@ -17,54 +14,22 @@ const makeAcceptKey = (key) => {
     const acceptKey = crypt.createHash("sha1").update(key + KEY).digest("base64");
     return acceptKey;
 };
-const isLeadByte = (byte) => {
-    if (byte <= 127) {
-        return true;
-    }
-    // マルチバイト文字の先頭
-    if (byte > 127 && ((byte & HOB_2) > 0)) {
-        return true;
-    }
-    return false;
-};
-const countNeedBytes = (leadByte) => {
-    if (leadByte <= 127)
-        return 1;
-    if (((leadByte & HOB_2) > 0) && ((leadByte & HOB_3) > 0) && ((leadByte & HOB_4) > 0))
-        return 4;
-    if (((leadByte & HOB_2) > 0) && ((leadByte & HOB_3) > 0))
-        return 3;
-    if (((leadByte & HOB_2) > 0))
-        return 2;
-    return 1;
-};
-// const CharcterBuffer = class {
-//   #bytes: number;
-//   #buffer: number[];
-//   constructor(bytes: number) {
-//     this.#bytes = bytes;
-//     this.#buffer = [];
+// const isLeadByte = (byte: number): boolean => {
+//   if (byte <= 127) {
+//     return true;
 //   }
-//   isFull(): boolean {
-//     if (this.#buffer.length === this.#bytes) {
-//       return true;
-//     }
-//     return false;
+//   // マルチバイト文字の先頭
+//   if (byte > 127 && ((byte & HOB_2) > 0)) {
+//     return true;
 //   }
-//   add(byte: number) {
-//     this.#buffer.push(byte);
-//   }
-//   debug() {
-//     console.log(`buf: ${this.#buffer}, bytes: ${this.#bytes}`);
-//   }
-//   write(): string {
-//     // UTF-8の場合、最大1文字4バイト使用する
-//     const buffer = new Buffer(4);
-//     for (let i=0; i<this.#buffer.length; i++) {
-//       buffer.writeUInt8(this.#buffer[i], i);
-//     }
-//     return buffer.toString();
-//   }
+//   return false;
+// }
+// const countNeedBytes = (leadByte: number): number => {
+//   if (leadByte <= 127) return 1;
+//   if (((leadByte & HOB_2) > 0) && ((leadByte & HOB_3) > 0) && ((leadByte & HOB_4) > 0)) return 4;
+//   if (((leadByte & HOB_2) > 0) && ((leadByte & HOB_3) > 0) ) return 3;
+//   if (((leadByte & HOB_2) > 0)) return 2;
+//   return 1;
 // }
 server.on("upgrade", (req, socket, head) => {
     const key = req.headers["sec-websocket-key"];
@@ -116,17 +81,17 @@ server.on("upgrade", (req, socket, head) => {
         if (payloadLength === 0x7e || payloadLength === 0x7f) {
             throw new Error("next 16bit or 64bit is not supported");
         }
-        // フォーマットではペイロード長は7bit or 7bit + 16bit or 7bit + 64bitの可変となる。
-        // 今回のケースではペイロード長は7bitに収まっており、後続8byteのペイロード長はなく、次はマスク用keyとなる。
-        // 固定で7bit + 8byteがペイロード長に使われるわけではないので注意。
+        // フォーマットではペイロード長は7bit / 7bit + 16bit / 7bit + 64bitのどれかとなる。
+        // 今回のケースではペイロード長は7bitに収まっており、後続の延長ペイロード長はなく、次はマスク用keyが格納されている想定
+        // 固定で7bitの後ろに延長ペイロード長が存在するわけではないので注意。
         const message = [];
         let characterBuffer = null;
         for (let i = 0; i < payloadLength; i++) {
             const maskingKey = received.readUInt8(2 + (i % 4));
             const appData = received.readUInt8(6 + i);
             const unmasked = appData ^ maskingKey;
-            if (isLeadByte(unmasked)) {
-                const neededBytes = countNeedBytes(unmasked);
+            if (Util_1.Util.isLeadByte(unmasked)) {
+                const neededBytes = Util_1.Util.countNeedBytes(unmasked);
                 characterBuffer = new CharcterBuffer_1.CharcterBuffer(neededBytes);
             }
             characterBuffer === null || characterBuffer === void 0 ? void 0 : characterBuffer.add(unmasked);
