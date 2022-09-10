@@ -1,5 +1,7 @@
 //https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API/Writing_WebSocket_servers
 
+import { CharcterBuffer } from "./CharcterBuffer";
+
 const http = require("http");
 const crypt = require("crypto");
 
@@ -36,39 +38,6 @@ const countNeedBytes = (leadByte: number): number => {
   if (((leadByte & HOB_2) > 0) && ((leadByte & HOB_3) > 0) ) return 3;
   if (((leadByte & HOB_2) > 0)) return 2;
   return 1;
-}
-
-const CharcterBuffer = class {
-  #bytes: number;
-  #buffer: number[];
-  constructor(bytes: number) {
-    this.#bytes = bytes;
-    this.#buffer = [];
-  }
-
-  isFull(): boolean {
-    if (this.#buffer.length === this.#bytes) {
-      return true;
-    }
-    return false;
-  }
-
-  add(byte: number) {
-    this.#buffer.push(byte);
-  }
-
-  debug() {
-    console.log(`buf: ${this.#buffer}, bytes: ${this.#bytes}`);
-  }
-
-  write(): string {
-    // UTF-8の場合、最大1文字4バイト使用する
-    const buffer = new Buffer(4);
-    for (let i=0; i<this.#buffer.length; i++) {
-      buffer.writeUInt8(this.#buffer[i], i);
-    }
-    return buffer.toString();
-  }
 }
 
 server.on("upgrade", (req: any, socket: any, head: any) => {
