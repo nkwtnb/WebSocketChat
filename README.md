@@ -12,7 +12,7 @@ WebSocket関連のライブラリを使用せずに作成したチャットア�
 
 This is a websocket-chat created without third-party libraries.
 
-## Scripts - client
+## Scripts - frontend
 
 based on Create React App 's scripts
 
@@ -24,7 +24,7 @@ compile sources (TypeScript)
 
 ### `npm run start`
 
-launch server
+launch server on frontend
 
 ### `npm run dev`
 
