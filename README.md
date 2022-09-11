@@ -32,6 +32,9 @@ compile sources (TypeScript) and launch server
 
 ## Reference
 
+- https://triple-underscore.github.io/RFC6455-ja.html  
+  RFC of WebSocket Protocol
+
 - https://developer.mozilla.org/ja/docs/Web/API/WebSockets_API/Writing_WebSocket_servers  
   document of writing websocket server
 
@@ -42,4 +45,5 @@ compile sources (TypeScript) and launch server
   websocket server implemented in Rust
 
 - https://qiita.com/yasushi-jp/items/b006f7170ef3a86de09f  
+- https://www.tohoho-web.com/ex/charset.html#utf-8  
   explanation of how to convert from unicode to utf-8 or utf-16
