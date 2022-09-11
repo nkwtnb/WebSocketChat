@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "npx tsc && node src/server.js"
+    "build": "npx tsc",
+    "dev": "npx tsc && node src/server.js",
+    "start": "node src/server.js"
   },
   "author": "",
   "license": "ISC",
