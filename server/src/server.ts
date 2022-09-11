@@ -6,7 +6,7 @@ import { Util } from "./Util";
 const http = require("http");
 
 const makeSendData = (messages: string[]) => {
-    const utf8: any[] = [];
+    const utf8: string[] = [];
     messages.forEach(char => {
       const converted = Util.convertUnicodeToUtf8(char);
       Array.prototype.push.apply(utf8, converted);
@@ -109,7 +109,7 @@ server.on("upgrade", (req: any, socket: any, head: any) => {
         socket.write(sendData);
       }
   });
-})
+});
 server.on("connection", (socket: any) => {
   sockets.push(socket);
   console.log("connected!");
