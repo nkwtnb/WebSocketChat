@@ -29,3 +29,17 @@ launch server
 ### `npm run dev`
 
 compile sources (TypeScript) and launch server
+
+## Reference
+
+- https://developer.mozilla.org/ja/docs/Web/API/WebSockets_API/Writing_WebSocket_servers  
+  document of writing websocket server
+
+- https://gist.github.com/Jxck/3171239  
+  websocket server with simply implements
+
+- https://blog.ojisan.io/rust-websocket/  
+  websocket server implemented in Rust
+
+- https://qiita.com/yasushi-jp/items/b006f7170ef3a86de09f  
+  explanation of how to convert from unicode to utf-8 or utf-16
