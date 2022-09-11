@@ -5,6 +5,12 @@ exports.Util = void 0;
 const crypt = require("crypto");
 exports.Util = (_a = class {
         constructor() { }
+        /**
+         * 対象文字のUnicodeのbitからUTF-8へ変換する
+         * @param char
+         * @returns string[] array of bit string
+         * @see https://qiita.com/yasushi-jp/items/b006f7170ef3a86de09f#utf-8%E3%81%AE%E5%A4%89%E6%8F%9B%E4%BE%8Bu00ae%E3%81%AE%E5%A0%B4%E5%90%88 UnicodeからUTF-8への変換
+         */
         static convertUnicodeToUtf8(char) {
             let codePointBit = this.convertCodePointToBit(char);
             const converted = [];
@@ -12,6 +18,8 @@ exports.Util = (_a = class {
                 converted.push(codePointBit);
                 return converted;
             }
+            // 6bit毎に分解し、先頭に"10"を付与していく
+            // Unicode ---> UTF-8の変換方法は @see 参照
             while (true) {
                 if (codePointBit.length === 0)
                     break;
@@ -19,6 +27,7 @@ exports.Util = (_a = class {
                 converted.unshift("10" + tail6);
                 codePointBit = codePointBit.slice(0, -6);
             }
+            // 先頭bitは1埋めとなる
             converted[0] = (this.ONE_PADDING_8bit + converted[0]).slice(-8);
             return converted;
         }
@@ -61,6 +70,11 @@ exports.Util = (_a = class {
             }
         },
     },
+    /**
+     * 対象文字のUnicodeをbit変換する
+     * @param char
+     * @returns string bit string
+     */
     _a.convertCodePointToBit = (char) => {
         const bitString = char.codePointAt(0).toString(2);
         const bit = parseInt(bitString, 2);

@@ -5,31 +5,22 @@ const CharcterBuffer_1 = require("./CharcterBuffer");
 const Util_1 = require("./Util");
 const http = require("http");
 const makeSendData = (messages) => {
-    /**
-     * Sending data to client
-     * data must not mask
-     */
-    // payload data
     const utf8 = [];
     messages.forEach(char => {
         const converted = Util_1.Util.convertUnicodeToUtf8(char);
         Array.prototype.push.apply(utf8, converted);
     });
+    // utf-8に変換したバイト文字列を詰めていく
+    // [0],[1]は固定の為、後ほど詰める為、length +2
     const sendData = Buffer.alloc(utf8.length + 2);
     utf8.forEach((byte, i) => {
         sendData[2 + i] = parseInt(byte, 2);
     });
-    // const point = "🍎".codePointAt(0).toString(2)
-    // https://qiita.com/yasushi-jp/items/b006f7170ef3a86de09f#utf-8%E3%81%AE%E5%A4%89%E6%8F%9B%E4%BE%8B%F0%A9%B9%BDu29e7d%E3%81%AE%E5%A0%B4%E5%90%88
-    // に沿ってビット列を分解
-    // FIN:1, opcode:1
-    // 0x81 = 10000001
+    // FIN(1) 〜 opcode(0x1)
     sendData[0] = 0x81;
-    // MASK:0, len:4　
-    // 0x4 = 100
-    // sendData[1] = 0x3;
+    // MASK(0) 〜 payload length(utf8.len)
     sendData[1] = utf8.length;
-    console.log('\n======== Sending Frame ===============');
+    // 延長ペイロード長 〜 マスク用Keyは使用しない
     return sendData;
 };
 const server = http.createServer((req, res) => {
@@ -96,7 +87,6 @@ server.on("upgrade", (req, socket, head) => {
             const maskingKey = received.readUInt8(2 + (i % 4));
             const appData = received.readUInt8(6 + i);
             const unmasked = appData ^ maskingKey;
-            console.log(unmasked);
             if (Util_1.Util.isLeadByte(unmasked)) {
                 const neededBytes = Util_1.Util.countNeedBytes(unmasked);
                 characterBuffer = new CharcterBuffer_1.CharcterBuffer(neededBytes);
@@ -107,9 +97,10 @@ server.on("upgrade", (req, socket, head) => {
                 messages.push(character);
             }
         }
+        // 取得したメッセージ
         const message = messages.join("");
-        console.log(message);
-        // send to client
+        // console.log(message);
+        // クライアントへ返信
         const sendData = makeSendData(messages);
         for (let i = 0; i < sockets.length; i++) {
             const socket = sockets[i];
