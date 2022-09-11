@@ -5,11 +5,31 @@ import { Util } from "./Util";
 
 const http = require("http");
 
+const makeSendData = (messages: string[]) => {
+    const utf8: any[] = [];
+    messages.forEach(char => {
+      const converted = Util.convertUnicodeToUtf8(char);
+      Array.prototype.push.apply(utf8, converted);
+    });
+    // utf-8に変換したバイト文字列を詰めていく
+    // [0],[1]は固定の為、後ほど詰める為、length +2
+    const sendData = Buffer.alloc(utf8.length + 2);
+    utf8.forEach((byte, i: number) => {
+      sendData[2 + i] = parseInt(byte, 2)
+    });
+    // FIN(1) 〜 opcode(0x1)
+    sendData[0] = 0x81;
+    // MASK(0) 〜 payload length(utf8.len)
+    sendData[1] = utf8.length;
+    // 延長ペイロード長 〜 マスク用Keyは使用しない
+    return sendData;
+}
+
 const server = http.createServer((req: any, res: any) => {
   res.writeHead(200, { "Content-Type": "text/plain" });
-  res.end("okay");
+  res.end("");
 });
-
+let sockets: any[] = [];
 server.on("upgrade", (req: any, socket: any, head: any) => {
   const key = req.headers["sec-websocket-key"];
   const acceptKey = Util.makeAcceptKey(key);
@@ -63,7 +83,7 @@ server.on("upgrade", (req: any, socket: any, head: any) => {
       // フォーマットではペイロード長は7bit / 7bit + 16bit / 7bit + 64bitのどれかとなる。
       // 今回のケースではペイロード長は7bitに収まっており、後続の延長ペイロード長はなく、次はマスク用keyが格納されている想定
       // 固定で7bitの後ろに延長ペイロード長が存在するわけではないので注意。
-      const message = [];
+      const messages = [];
       let characterBuffer = null;
       for (let i=0; i<payloadLength; i++) {
         const maskingKey = received.readUInt8(2 + (i % 4));
@@ -76,17 +96,24 @@ server.on("upgrade", (req: any, socket: any, head: any) => {
         characterBuffer?.add(unmasked);
         if (characterBuffer?.isFull()) {
           const character = characterBuffer.write();
-          message.push(character);
+          messages.push(character);
         }
       }
-      console.log(message.join(""));
+      // 取得したメッセージ
+      const message = messages.join("");
+      // console.log(message);
+      // クライアントへ返信
+      const sendData = makeSendData(messages);
+      for (let i=0; i<sockets.length; i++) {
+        const socket = sockets[i];
+        socket.write(sendData);
+      }
   });
 })
-
-server.on("connection", (ws: any) => {
+server.on("connection", (socket: any) => {
+  sockets.push(socket);
   console.log("connected!");
 });
-
 server.on('error', function (e: any) {
   console.log(e);
 });

@@ -4,36 +4,42 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const CharcterBuffer_1 = require("./CharcterBuffer");
 const Util_1 = require("./Util");
 const http = require("http");
-const crypt = require("crypto");
+const makeSendData = (messages) => {
+    /**
+     * Sending data to client
+     * data must not mask
+     */
+    // payload data
+    const utf8 = [];
+    messages.forEach(char => {
+        const converted = Util_1.Util.convertUnicodeToUtf8(char);
+        Array.prototype.push.apply(utf8, converted);
+    });
+    const sendData = Buffer.alloc(utf8.length + 2);
+    utf8.forEach((byte, i) => {
+        sendData[2 + i] = parseInt(byte, 2);
+    });
+    // const point = "🍎".codePointAt(0).toString(2)
+    // https://qiita.com/yasushi-jp/items/b006f7170ef3a86de09f#utf-8%E3%81%AE%E5%A4%89%E6%8F%9B%E4%BE%8B%F0%A9%B9%BDu29e7d%E3%81%AE%E5%A0%B4%E5%90%88
+    // に沿ってビット列を分解
+    // FIN:1, opcode:1
+    // 0x81 = 10000001
+    sendData[0] = 0x81;
+    // MASK:0, len:4　
+    // 0x4 = 100
+    // sendData[1] = 0x3;
+    sendData[1] = utf8.length;
+    console.log('\n======== Sending Frame ===============');
+    return sendData;
+};
 const server = http.createServer((req, res) => {
     res.writeHead(200, { "Content-Type": "text/plain" });
-    res.end("okay");
+    res.end("");
 });
-const makeAcceptKey = (key) => {
-    const KEY = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-    const acceptKey = crypt.createHash("sha1").update(key + KEY).digest("base64");
-    return acceptKey;
-};
-// const isLeadByte = (byte: number): boolean => {
-//   if (byte <= 127) {
-//     return true;
-//   }
-//   // マルチバイト文字の先頭
-//   if (byte > 127 && ((byte & HOB_2) > 0)) {
-//     return true;
-//   }
-//   return false;
-// }
-// const countNeedBytes = (leadByte: number): number => {
-//   if (leadByte <= 127) return 1;
-//   if (((leadByte & HOB_2) > 0) && ((leadByte & HOB_3) > 0) && ((leadByte & HOB_4) > 0)) return 4;
-//   if (((leadByte & HOB_2) > 0) && ((leadByte & HOB_3) > 0) ) return 3;
-//   if (((leadByte & HOB_2) > 0)) return 2;
-//   return 1;
-// }
+let sockets = [];
 server.on("upgrade", (req, socket, head) => {
     const key = req.headers["sec-websocket-key"];
-    const acceptKey = makeAcceptKey(key);
+    const acceptKey = Util_1.Util.makeAcceptKey(key);
     socket.write('HTTP/1.1 101 Switching Protocols\r\n' +
         'Upgrade: webSocket\r\n' +
         'Connection: upgrade\r\n' +
@@ -84,12 +90,13 @@ server.on("upgrade", (req, socket, head) => {
         // フォーマットではペイロード長は7bit / 7bit + 16bit / 7bit + 64bitのどれかとなる。
         // 今回のケースではペイロード長は7bitに収まっており、後続の延長ペイロード長はなく、次はマスク用keyが格納されている想定
         // 固定で7bitの後ろに延長ペイロード長が存在するわけではないので注意。
-        const message = [];
+        const messages = [];
         let characterBuffer = null;
         for (let i = 0; i < payloadLength; i++) {
             const maskingKey = received.readUInt8(2 + (i % 4));
             const appData = received.readUInt8(6 + i);
             const unmasked = appData ^ maskingKey;
+            console.log(unmasked);
             if (Util_1.Util.isLeadByte(unmasked)) {
                 const neededBytes = Util_1.Util.countNeedBytes(unmasked);
                 characterBuffer = new CharcterBuffer_1.CharcterBuffer(neededBytes);
@@ -97,13 +104,21 @@ server.on("upgrade", (req, socket, head) => {
             characterBuffer === null || characterBuffer === void 0 ? void 0 : characterBuffer.add(unmasked);
             if (characterBuffer === null || characterBuffer === void 0 ? void 0 : characterBuffer.isFull()) {
                 const character = characterBuffer.write();
-                message.push(character);
+                messages.push(character);
             }
         }
-        console.log(message.join(""));
+        const message = messages.join("");
+        console.log(message);
+        // send to client
+        const sendData = makeSendData(messages);
+        for (let i = 0; i < sockets.length; i++) {
+            const socket = sockets[i];
+            socket.write(sendData);
+        }
     });
 });
-server.on("connection", (ws) => {
+server.on("connection", (socket) => {
+    sockets.push(socket);
     console.log("connected!");
 });
 server.on('error', function (e) {

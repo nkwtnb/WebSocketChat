@@ -33,8 +33,9 @@ exports.CharcterBuffer = (_a = class {
             console.log(`buf: ${__classPrivateFieldGet(this, _buffer, "f")}, bytes: ${__classPrivateFieldGet(this, _bytes, "f")}`);
         }
         write() {
-            // UTF-8の場合、最大1文字に4バイト使用する
-            const buffer = Buffer.alloc(4);
+            // 対象文字の必要バイト数を確保
+            // （UTF-8の場合、最大1文字に4バイト使用する）
+            const buffer = Buffer.alloc(__classPrivateFieldGet(this, _bytes, "f"));
             for (let i = 0; i < __classPrivateFieldGet(this, _buffer, "f").length; i++) {
                 buffer.writeUInt8(__classPrivateFieldGet(this, _buffer, "f")[i], i);
             }
