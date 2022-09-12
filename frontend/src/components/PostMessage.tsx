@@ -9,7 +9,7 @@ const formatHHMM = (date: Date) => {
 
 export const PostMessage = ({setMessages}: {setMessages: ((param: Message) => void)}) => {
   const [isConnected, setConnected] = useState(false);
-  const message = useRef<HTMLTextAreaElement>(null);
+  const messageRef = useRef<HTMLTextAreaElement>(null);
   let calledOnce = useRef(false);
   let ws = useRef<WebSocket>();
 
@@ -45,24 +45,27 @@ export const PostMessage = ({setMessages}: {setMessages: ((param: Message) => vo
   }
 
   const send = () => {
-    const text = message.current?.value;
+    const text = messageRef.current?.value;
     if (text?.length! > 127) {
 
     }
-    if (message.current?.value !== "") {
-      ws.current?.send(message.current?.value!);
+    if (messageRef.current?.value !== "") {
+      ws.current?.send(messageRef.current?.value!);
       const time = formatHHMM(new Date());
       setMessages({
         sender: "me",
-        content: message.current?.value!,
+        content: messageRef.current?.value!,
         time: time
       });
+      if (messageRef.current) {
+        messageRef.current.value = "";
+      }
     }
   }
 
   return (
     <div className="border flex">
-      <textarea id="send-message" className="grow align-bottom resize-none h-12" ref={message}></textarea>
+      <textarea id="send-message" className="grow align-bottom resize-none h-12" ref={messageRef}></textarea>
       <button id="send" disabled={!isConnected} className=" px-8 py-3 text-white rounded disabled:bg-gray-300 bg-blue-600 rounded disabled:outline-none" onClick={send}>
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
         <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
