@@ -1,0 +1,21 @@
+.sender-me::before {
+  border-left: 12px solid rgb(11, 160, 118);
+  border-top: 12px solid transparent;
+  border-bottom: 12px solid transparent;
+  content: '';
+  margin-top: -10px;
+  position: absolute;
+  right: -12px;
+  top: 50%;
+}
+
+.sender-other::before {
+  border-left: 12px solid rgb(83, 133, 6);
+  border-top: 12px solid transparent;
+  border-bottom: 12px solid transparent;
+  content: '';
+  margin-top: -10px;
+  position: absolute;
+  left: -12px;
+  top: 50%;
+}
