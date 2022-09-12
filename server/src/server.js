@@ -25,12 +25,7 @@ const makeSendData = (messages) => {
 };
 const filterDestination = (key, clients) => {
     const destinations = clients.filter(client => client.key !== key);
-    console.log(destinations);
     return destinations;
-    // for (let i=0; i<clients.length; i++) {
-    //   const client = clients[i];
-    //   if (key === client.key) return client;
-    // }
 };
 const server = http.createServer((req, res) => {
     res.writeHead(200, { "Content-Type": "text/plain" });
@@ -50,6 +45,9 @@ server.on("upgrade", (req, socket, head) => {
         key: key,
         socket: socket
     });
+    socket.on("error", (e) => {
+        console.log(e);
+    });
     socket.on("data", (received) => {
         const firstByte = received[0];
         // UInt8Arrayの8bitと0x80(1000 0000)のビット演算後、先頭ビットを取るため、右に7ビットシフト
@@ -68,7 +66,8 @@ server.on("upgrade", (req, socket, head) => {
                 break;
             case 0x8:
                 payloadType = 'connection close';
-                console.log("close!");
+                clients = clients.filter(client => client.key !== key);
+                console.log(`close socket: ${key}`);
                 return;
             case 0x9:
                 payloadType = 'ping';
@@ -119,10 +118,6 @@ server.on("upgrade", (req, socket, head) => {
         destinations.forEach(dest => {
             dest.socket.write(sendData);
         });
-        // for (let i=0; i<clients.length; i++) {
-        //   const socket = clients[i];
-        //   socket.write(sendData);
-        // }
     });
 });
 server.on("connection", (socket) => {

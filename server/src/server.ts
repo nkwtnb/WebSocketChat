@@ -48,6 +48,9 @@ server.on("upgrade", (req: any, socket: any, head: any) => {
     key: key,
     socket: socket
   });
+  socket.on("error", (e: any) => {
+    console.log(e);
+  });
   socket.on("data", (received: Buffer) => {
     const firstByte = received[0];
     // UInt8Arrayの8bitと0x80(1000 0000)のビット演算後、先頭ビットを取るため、右に7ビットシフト
@@ -66,7 +69,8 @@ server.on("upgrade", (req: any, socket: any, head: any) => {
         break;
       case 0x8:
         payloadType = 'connection close';
-        console.log("close!");
+        clients = clients.filter(client => client.key !== key);
+        console.log(`close socket: ${key}`);
         return;
       case 0x9:
         payloadType = 'ping';
