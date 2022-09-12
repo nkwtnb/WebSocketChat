@@ -25,11 +25,16 @@ const makeSendData = (messages: string[]) => {
     return sendData;
 }
 
+const filterDestination = (key: string, clients: any[]) => {
+  const destinations = clients.filter(client => client.key !== key);
+  return destinations;
+}
+
 const server = http.createServer((req: any, res: any) => {
   res.writeHead(200, { "Content-Type": "text/plain" });
   res.end("");
 });
-let sockets: any[] = [];
+let clients: any[] = [];
 server.on("upgrade", (req: any, socket: any, head: any) => {
   const key = req.headers["sec-websocket-key"];
   const acceptKey = Util.makeAcceptKey(key);
@@ -39,6 +44,10 @@ server.on("upgrade", (req: any, socket: any, head: any) => {
   `Sec-WebSocket-Accept: ${acceptKey}\r\n` +
   `Sec-WebSocket-Protocol: chat\r\n` +
   '\r\n');
+  clients.push({
+    key: key,
+    socket: socket
+  });
   socket.on("data", (received: Buffer) => {
     const firstByte = received[0];
     // UInt8Arrayの8bitと0x80(1000 0000)のビット演算後、先頭ビットを取るため、右に7ビットシフト
@@ -103,15 +112,14 @@ server.on("upgrade", (req: any, socket: any, head: any) => {
       const message = messages.join("");
       // console.log(message);
       // クライアントへ返信
+      const destinations = filterDestination(key, clients);
       const sendData = makeSendData(messages);
-      for (let i=0; i<sockets.length; i++) {
-        const socket = sockets[i];
-        socket.write(sendData);
-      }
+      destinations.forEach(dest => {
+        dest.socket.write(sendData);
+      })
   });
 });
 server.on("connection", (socket: any) => {
-  sockets.push(socket);
   console.log("connected!");
 });
 server.on('error', function (e: any) {
