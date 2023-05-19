@@ -48,6 +48,7 @@ server.on("upgrade", (req: any, socket: any, head: any) => {
     key: key,
     socket: socket
   });
+  console.log("clients count: " + clients.length);
   socket.on("error", (e: any) => {
     console.log(e);
   });
@@ -123,10 +124,7 @@ server.on("upgrade", (req: any, socket: any, head: any) => {
       })
   });
 });
-server.on("connection", (socket: any) => {
-  console.log("connected!");
-});
 server.on('error', function (e: any) {
   console.log(e);
 });
-server.listen(1337, "127.0.0.1");
+server.listen(8080);
